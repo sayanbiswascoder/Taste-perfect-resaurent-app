@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "517924545945",
+    "project_id": "taste-perfect-656ec",
+    "storage_bucket": "taste-perfect-656ec.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:517924545945:android:d3d459ab2b15f44087df08",
+        "android_client_info": {
+          "package_name": "com.tasteperfect.restaurant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDScKHloum8M4GqYCse8VY0-9blOtanNzE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
