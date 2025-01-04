@@ -13,7 +13,7 @@ const LoginSignupScreen = ({navigation}) => {
     const [password, setPassword] = useState('');
 
     const handleLogin = () => {
-        axios.post('http://192.168.166.252:3000/api/auth/logIn', {
+        axios.post('http://192.168.181.252:3000/api/auth/logIn', {
             type: 'restaurants',
             email,
             password,
@@ -37,7 +37,7 @@ const LoginSignupScreen = ({navigation}) => {
     };
 
     const handleSignup = () => {
-        axios.post('http://192.168.166.252:3000/api/auth/signUp', {
+        axios.post('http://192.168.181.252:3000/api/auth/signUp', {
             type: 'restaurants',
             name,
             email,

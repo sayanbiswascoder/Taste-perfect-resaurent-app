@@ -1,15 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Switch, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Switch, Image, Alert } from 'react-native';
 import Modal from 'react-native-modal';
 // Uncomment if using image picker
 import { launchImageLibrary } from 'react-native-image-picker';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MenuScreen = () => {
-    const [menuItems, setMenuItems] = useState([
-        { id: '1', name: 'Veg Burger', description: 'Delicious veggie burger', price: '₹70', isVeg: true, image: 'https://via.placeholder.com/50', available: true },
-        { id: '2', name: 'Paneer Roll', description: 'Spicy paneer roll', price: '₹150', isVeg: true, image: 'https://via.placeholder.com/50', available: true },
-    ]);
+    const [menuItems, setMenuItems] = useState([]);
     const [isModalVisible, setModalVisible] = useState(false);
     const [newDishName, setNewDishName] = useState('');
     const [newDishCategory, setNewDishCategory] = useState('');
@@ -22,24 +21,84 @@ const MenuScreen = () => {
         setModalVisible(!isModalVisible);
     };
 
-    const addNewDish = () => {
+    const addNewDish = async () => {
         const newDish = {
-            id: Math.random().toString(),
             name: newDishName,
             category: newDishCategory,
             description: newDishDescription,
-            price: `₹${newDishPrice}`,
+            price: newDishPrice,
             isVeg,
             image: dishImage,
         };
-        setMenuItems([...menuItems, newDish]);
-        setNewDishName('');
-        setNewDishCategory('');
-        setNewDishDescription('');
-        setNewDishPrice('');
-        setIsVeg(true);
-        setDishImage(null);
-        toggleModal();
+
+        axios.post('http://192.168.181.252:3000/api/restaurants/addDish', newDish, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await AsyncStorage.getItem('JWT')}`,
+            },
+        }).then((response) => {
+            if (response.status === 201) {
+                setNewDishName('');
+                setNewDishCategory('');
+                setNewDishDescription('');
+                setNewDishPrice('');
+                setIsVeg(true);
+                setDishImage(null);
+                toggleModal();
+                setMenuItems([...menuItems, newDish]);
+            }
+        }).catch((error) => {
+            console.log(error.response);
+        });
+    };
+
+    const toggleAvailability = async (dishId, toggleTo) => {
+        axios.post('http://192.168.181.252:3000/api/restaurants/toggleDishAvailability', {
+            dishId,
+            toggleTo,
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await AsyncStorage.getItem('JWT')}`,
+            },
+        }).then(response => {
+            if (response.status === 201) {
+                fetchData();
+            }
+        }).catch(error => {
+            console.log('Error toggling availability:', error);
+        });
+    };
+
+    const deleteDish = async (dishId, category) => {
+        // first conform to the user if really want to delete
+        Alert.alert(
+            'Delete Dish',
+            'Are you sure you want to delete this dish?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete', onPress: async () => {
+                        axios.post('http://192.168.181.252:3000/api/restaurants/deleteDish', {
+                            dishId,
+                            category,
+                        }, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${await AsyncStorage.getItem('JWT')}`,
+                            },
+                        }).then((response) => {
+                            if (response.status === 201) {
+                                fetchData();
+                            }
+                        }).catch((error) => {
+                            console.log(error.response);
+                        });
+                    }
+                },
+            ],
+            { cancelable: true }
+        );
     };
 
     // Function to select an image (mocked for now)
@@ -53,10 +112,28 @@ const MenuScreen = () => {
         // setDishImage('https://via.placeholder.com/150'); // Temporary placeholder
     };
 
-    const renderMenuItem = ({ item }) => (
+
+    const fetchData = async () => {
+        axios.post('http://192.168.181.252:3000/api/restaurants/fetchMenu', {}, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await AsyncStorage.getItem('JWT')}`,
+            },
+        }).then((response) => {
+            console.log("data", response.data.data);
+            setMenuItems(response.data.data);
+        }).catch((error) => {
+            console.log(error.response);
+        });
+    };
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const renderMenuItem = ({ item }, props) => (
         <View style={styles.menuItem}>
-            {item.image && <Image source={{ uri: item.image }} style={[styles.dishImage, {filter: 'grayscale(100%)'}]} />}
-            <View style={{flexDirection: 'column', width: '70%', padding: 10}}>
+            {item.image && <Image source={{ uri: item.image }} style={[styles.dishImage, { filter: 'grayscale(100%)' }]} />}
+            <View style={{ flexDirection: 'column', width: '70%', padding: 10 }}>
                 <View style={styles.menuTextContainer}>
                     <View>
                         <Text style={styles.menuItemText}>{item.name}</Text>
@@ -64,15 +141,15 @@ const MenuScreen = () => {
                     </View>
                     <View>
                         <Text style={styles.menuItemPrice}>{item.price}</Text>
-                        <Text style={[styles.menuItemVeg, {color: item.isVeg ? 'green' : 'red'}]}>{item.isVeg ? 'Veg' : 'Non-Veg'}</Text>
+                        <Text style={[styles.menuItemVeg, { color: item.isVeg ? 'green' : 'red' }]}>{item.isVeg ? 'Veg' : 'Non-Veg'}</Text>
                     </View>
                 </View>
-                <View style={{flexDirection: 'row', justifyContent: 'flex-end', marginTop: 5, gap: 10}}>
-                    <TouchableOpacity onPress={() => { }}>
-                        <Text style={[styles.menuItemButtonText, {color: 'green'}]}>{item.available ? 'Not Available' : 'Available'}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 5, gap: 10 }}>
+                    <TouchableOpacity onPress={() => toggleAvailability(item._id, !item.available)}>
+                        <Text style={[styles.menuItemButtonText, { color: 'green' }]}>{item.available ? 'Not Available' : 'Available'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { }}>
-                        <Text style={[styles.menuItemButtonText, {color: 'red'}]}>Delete</Text>
+                    <TouchableOpacity onPress={() => deleteDish(item._id, props.category)}>
+                        <Text style={[styles.menuItemButtonText, { color: 'red' }]}>Delete</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -87,8 +164,17 @@ const MenuScreen = () => {
             <FlatList
                 data={menuItems}
                 keyExtractor={(item) => item.id}
-                renderItem={renderMenuItem}
-                contentContainerStyle={styles.menuList}
+                renderItem={({ item }) => {
+                    console.log("item", item)
+                    return <View>
+                        <Text style={styles.categoryTitle}>{item.category}</Text>
+                        <FlatList
+                            data={item.items}
+                            keyExtractor={(dish) => dish._id}
+                            renderItem={(dish) => renderMenuItem(dish, item.category)}
+                        />
+                    </View>
+                }}
             />
 
             {/* Add Dish Button */}
@@ -164,6 +250,12 @@ const styles = StyleSheet.create({
         color: '#333',
         textAlign: 'center',
         marginBottom: 20,
+    },
+    categoryTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 10,
     },
     menuList: {
         paddingBottom: 20,
