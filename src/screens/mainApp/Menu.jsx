@@ -45,7 +45,7 @@ const MenuScreen = () => {
                 setIsVeg(true);
                 setDishImage(null);
                 toggleModal();
-                setMenuItems([...menuItems, newDish]);
+                fetchData();
             }
         }).catch((error) => {
             console.log(error.response);
@@ -72,6 +72,7 @@ const MenuScreen = () => {
 
     const deleteDish = async (dishId, category) => {
         // first conform to the user if really want to delete
+        console.log(category)
         Alert.alert(
             'Delete Dish',
             'Are you sure you want to delete this dish?',
@@ -148,7 +149,7 @@ const MenuScreen = () => {
                     <TouchableOpacity onPress={() => toggleAvailability(item._id, !item.available)}>
                         <Text style={[styles.menuItemButtonText, { color: 'green' }]}>{item.available ? 'Not Available' : 'Available'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => deleteDish(item._id, props.category)}>
+                    <TouchableOpacity onPress={() => deleteDish(item._id, props)}>
                         <Text style={[styles.menuItemButtonText, { color: 'red' }]}>Delete</Text>
                     </TouchableOpacity>
                 </View>
